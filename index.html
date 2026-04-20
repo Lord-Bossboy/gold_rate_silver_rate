@@ -3,333 +3,411 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MetalTrack Pro | Advanced Market Analytics</title>
+    <title>MetalTrack Horizon | AI-Powered Market Command</title>
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #0a0b0d;
-            --sidebar-bg: #111418;
-            --accent-gold: #f0b90b;
-            --text-main: #eaecef;
-            --text-dim: #848e9c;
-            --border: #2b2f36;
-            --gain: #0ecb81;
-            --loss: #f6465d;
+            --bg-deep: #050608;
+            --panel-glass: rgba(18, 22, 28, 0.7);
+            --neon-gold: #f0b90b;
+            --neon-cyan: #00f2ff;
+            --text-main: #e0e6ed;
+            --text-dim: #94a3b8;
+            --gain: #00ff9d;
+            --loss: #ff3b5c;
+            --accent-glow: rgba(0, 242, 255, 0.2);
         }
+
+        * { box-sizing: border-box; }
 
         body {
             margin: 0;
             padding: 0;
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-dark);
+            background-color: var(--bg-deep);
+            background-image: 
+                radial-gradient(circle at 50% 50%, #1a1e2e 0%, transparent 80%),
+                linear-gradient(rgba(18, 22, 28, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(18, 22, 28, 0.1) 1px, transparent 1px);
+            background-size: 100% 100%, 50px 50px, 50px 50px;
             color: var(--text-main);
             height: 100vh;
             display: flex;
             overflow: hidden;
         }
 
-        /* Sidebar Left */
+        /* Futuristic Sidebar */
         #left-sidebar {
-            width: 300px;
-            background-color: var(--sidebar-bg);
-            border-right: 1px solid var(--border);
+            width: 320px;
+            background: var(--panel-glass);
+            backdrop-filter: blur(15px);
+            border-right: 1px solid rgba(0, 242, 255, 0.1);
             display: flex;
             flex-direction: column;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+            z-index: 10;
         }
 
-        .sidebar-header {
-            padding: 20px;
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.2rem;
+        .brand {
+            padding: 25px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem;
             font-weight: 700;
-            color: var(--accent-gold);
-            border-bottom: 1px solid var(--border);
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, var(--neon-gold), var(--neon-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
 
+        #search-container { padding: 15px; }
         #asset-search {
-            width: 80%;
-            margin: 15px auto;
-            background: #1e2329;
-            border: 1px solid var(--border);
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(0, 242, 255, 0.2);
             color: white;
-            padding: 8px 12px;
-            border-radius: 4px;
+            padding: 12px;
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.3s;
         }
+        #asset-search:focus { border-color: var(--neon-cyan); box-shadow: 0 0 10px var(--accent-glow); }
 
-        .asset-list {
-            flex-grow: 1;
-            overflow-y: auto;
-        }
-
+        .asset-list { flex-grow: 1; overflow-y: auto; padding: 10px; }
         .asset-item {
-            padding: 12px 20px;
-            border-bottom: 1px solid #1e2329;
+            padding: 15px;
+            margin-bottom: 8px;
+            border-radius: 10px;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.3s;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid transparent;
             display: flex;
             justify-content: space-between;
-            align-items: center;
+        }
+        .asset-item:hover { background: rgba(0, 242, 255, 0.05); transform: translateX(5px); }
+        .asset-item.active { 
+            background: rgba(0, 242, 255, 0.1); 
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.1);
         }
 
-        .asset-item:hover { background-color: #1e2329; }
-        .asset-item.active { background-color: #2b2f36; border-left: 3px solid var(--accent-gold); }
+        .symbol { font-family: 'Orbitron'; font-weight: 700; color: var(--neon-cyan); }
+        .price-val { font-weight: 600; }
+        .change-pct { font-size: 0.8rem; margin-top: 4px; }
 
-        .asset-info .symbol { font-weight: 600; display: block; }
-        .asset-info .name { font-size: 0.75rem; color: var(--text-dim); }
-        .asset-price { text-align: right; }
-        .asset-change { font-size: 0.8rem; }
-
-        /* Main Content */
-        #main-content {
+        /* Main Viewport */
+        #main-viewport {
             flex-grow: 1;
             display: flex;
             flex-direction: column;
-            padding: 0 20px;
+            padding: 20px;
             position: relative;
         }
 
-        .chart-header {
-            padding: 20px 0;
+        .header-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 20px;
+            padding: 0 10px;
+        }
+
+        #chart-frame {
+            flex-grow: 1;
+            background: rgba(0,0,0,0.4);
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* AI Assistant Sidebar */
+        #ai-sidebar {
+            width: 380px;
+            background: var(--panel-glass);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(0, 242, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .panel-title {
+            font-family: 'Orbitron';
+            font-size: 1rem;
+            margin-bottom: 20px;
+            color: var(--neon-gold);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        #chart-container {
+        .ai-chat-box {
             flex-grow: 1;
-            background: #000;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        /* Sidebar Right */
-        #right-sidebar {
-            width: 350px;
-            background-color: var(--sidebar-bg);
-            border-left: 1px solid var(--border);
-            padding: 24px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 15px;
             overflow-y: auto;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #d1d4dc;
+            border: 1px solid rgba(255,255,255,0.05);
         }
 
-        .analysis-card {
-            background: #1e2329;
+        .ai-input-group {
+            margin-top: 15px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-neon {
+            background: transparent;
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            padding: 10px 15px;
             border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
+            cursor: pointer;
+            font-family: 'Orbitron';
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            transition: all 0.3s;
         }
+        .btn-neon:hover { background: var(--neon-cyan); color: black; box-shadow: 0 0 20px var(--neon-cyan); }
 
-        .stat-grid {
+        .settings-icon { cursor: pointer; opacity: 0.5; transition: 0.3s; }
+        .settings-icon:hover { opacity: 1; color: var(--neon-cyan); }
+
+        /* Tech Metrics */
+        .metrics-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 15px;
+            gap: 12px;
+            margin-bottom: 20px;
         }
-
-        .stat-item {
-            background: #2b2f36;
+        .metric-card {
+            background: rgba(255,255,255,0.03);
             padding: 12px;
-            border-radius: 6px;
-            text-align: center;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .metric-label { font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 4px; }
+        .metric-value { font-family: 'Orbitron'; font-size: 0.9rem; }
+
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 100;
+            background: linear-gradient(0deg, rgba(0, 242, 255, 0.05) 0%, transparent 100%);
+            position: absolute;
+            bottom: 100%;
+            animation: scan 8s linear infinite;
+            pointer-events: none;
         }
 
-        .stat-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 5px; }
-        .stat-value { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.1rem; }
-
-        .sentiment-box {
-            color: var(--text-dim);
-            font-size: 0.9rem;
-            line-height: 1.5;
-            margin-top: 10px;
+        @keyframes scan { from { bottom: 100%; } to { bottom: -100px; } }
+        
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .modal-content {
+            background: var(--sidebar-bg); padding: 30px; border-radius: 15px; border: 1px solid var(--neon-cyan);
+            width: 400px; text-align: center;
         }
 
         .positive { color: var(--gain); }
         .negative { color: var(--loss); }
-
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
     </style>
 </head>
 <body>
 
-    <!-- Left Sidebar: Asset Selection -->
+    <div class="scanline"></div>
+
+    <!-- API Key Modal -->
+    <div id="api-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="font-family: 'Orbitron';">Enter OpenAI API Key</h3>
+            <p style="font-size: 0.8rem; color: var(--text-dim);">Your key is stored locally in your browser only.</p>
+            <input type="password" id="api-key-input" style="width: 100%; padding: 10px; margin: 15px 0; border-radius: 5px; border: 1px solid #333; background: #000; color: #fff;">
+            <button class="btn-neon" onclick="saveKey()">Save Access Key</button>
+        </div>
+    </div>
+
     <div id="left-sidebar">
-        <div class="sidebar-header">MetalTrack Pro</div>
-        <input type="text" id="asset-search" placeholder="Search metals...">
-        <div class="asset-list" id="asset-list">
-            <!-- Dynamically populated -->
-            <div style="padding: 20px; color: #848e9c;">Loading assets...</div>
+        <div class="brand">HORIZON v2.0</div>
+        <div id="search-container">
+            <input type="text" id="asset-search" placeholder="SEARCH ASSETS...">
         </div>
+        <div class="asset-list" id="asset-list"></div>
     </div>
 
-    <!-- Main Section: Chart -->
-    <div id="main-content">
-        <div class="chart-header">
-            <div id="active-asset-info">
-                <h1 style="margin: 0; font-family: 'Outfit';">Select an Asset</h1>
-                <span id="active-symbol" style="color: var(--text-dim);">-</span>
+    <div id="main-viewport">
+        <div class="header-stats">
+            <div>
+                <div id="active-name" style="font-family: 'Orbitron'; font-size: 1.8rem; font-weight: 700;">SELECT ASSET</div>
+                <div id="active-symbol-tag" style="color: var(--neon-cyan); font-weight: 600; letter-spacing: 1px;">-</div>
             </div>
-            <div id="current-price-display" style="text-align: right;">
-                <div style="font-size: 1.8rem; font-weight: 700;">-</div>
-                <div id="day-change" style="font-size: 1rem;">-</div>
+            <div style="text-align: right;">
+                <div id="current-price" style="font-size: 2.2rem; font-family: 'Orbitron';">$--</div>
+                <div id="current-change" style="font-weight: 600;">--%</div>
             </div>
         </div>
-        <div id="chart-container"></div>
+        <div id="chart-frame"></div>
     </div>
 
-    <!-- Right Sidebar: Analytics -->
-    <div id="right-sidebar">
-        <h2 style="font-family: 'Outfit'; border-bottom: 1px solid var(--border); padding-bottom: 10px;">Market Analysis</h2>
-        
-        <div class="analysis-card">
-            <div style="font-weight: 600;">Performance History</div>
-            <div class="stat-grid">
-                <div class="stat-item">
-                    <div class="stat-label">1 Hour</div>
-                    <div id="perf-1h" class="stat-value">-</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">1 Day</div>
-                    <div id="perf-1d" class="stat-value">-</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">1 Week</div>
-                    <div id="perf-1w" class="stat-value">-</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">1 Year</div>
-                    <div id="perf-1y" class="stat-value">-</div>
-                </div>
+    <div id="ai-sidebar">
+        <div class="panel-title">
+            <span>AI ANALYSIS</span>
+            <span class="settings-icon" onclick="showModal()">⚙</span>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">SMA 20</div>
+                <div id="m-sma20" class="metric-value">-</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">SMA 50</div>
+                <div id="m-sma50" class="metric-value">-</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">1W VOL</div>
+                <div id="m-1w" class="metric-value">-</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">1Y TREND</div>
+                <div id="m-1y" class="metric-value">-</div>
             </div>
         </div>
 
-        <div class="analysis-card">
-            <div style="font-weight: 600;">Trend Insight</div>
-            <div id="trend-desc" class="sentiment-box">
-                Fetch successful trends by selecting a metal. Insight will show potential drivers and recent news.
-            </div>
+        <div id="ai-chat" class="ai-chat-box">
+            System ready. Select a metal and click "Generate Review" to start AI analysis.
+        </div>
+
+        <div class="ai-input-group">
+            <button class="btn-neon" style="width: 100%;" onclick="getAIReview()">Generate AI Review</button>
         </div>
     </div>
 
     <script>
-        let chart;
-        let candleSeries;
+        let chart, candleSeries, currentAssetData;
 
-        function initChart() {
-            const chartDiv = document.getElementById('chart-container');
+        function init() {
+            const chartDiv = document.getElementById('chart-frame');
             chart = LightweightCharts.createChart(chartDiv, {
-                layout: {
-                    backgroundColor: '#000000',
-                    textColor: '#d1d4dc',
-                },
-                grid: {
-                    vertLines: { color: 'rgba(42, 46, 57, 0.5)' },
-                    horzLines: { color: 'rgba(42, 46, 57, 0.5)' },
-                },
-                rightPriceScale: { borderVisible: false },
+                layout: { backgroundColor: 'transparent', textColor: '#94a3b8' },
+                grid: { vertLines: { color: 'rgba(255,255,255,0.03)' }, horzLines: { color: 'rgba(255,255,255,0.03)' } },
+                rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.1, bottom: 0.1 } },
                 timeScale: { borderVisible: false },
-                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
             });
-
-            candleSeries = chart.addCandlestickSeries({
-                upColor: '#0ecb81',
-                downColor: '#f6465d',
-                borderVisible: false,
-                wickUpColor: '#0ecb81',
-                wickDownColor: '#f6465d',
-            });
-
-            const resizeHandler = () => {
-                chart.resize(chartDiv.clientWidth, chartDiv.clientHeight);
-            };
-            window.addEventListener('resize', resizeHandler);
-            resizeHandler();
+            candleSeries = chart.addCandlestickSeries({ upColor: '#00ff9d', downColor: '#ff3b5c', borderVisible: false, wickUpColor: '#00ff9d', wickDownColor: '#ff3b5c' });
+            window.addEventListener('resize', () => chart.resize(chartDiv.clientWidth, chartDiv.clientHeight));
+            loadAssetList();
         }
 
-        async function loadAssets() {
-            try {
-                const response = await fetch('data/assets.json');
-                const assets = await response.json();
-                const list = document.getElementById('asset-list');
-                list.innerHTML = '';
+        async function loadAssetList() {
+            const res = await fetch('data/assets.json');
+            const assets = await res.json();
+            const list = document.getElementById('asset-list');
+            list.innerHTML = assets.map(a => `
+                <div class="asset-item" onclick="loadAsset('${a.ticker}', this)">
+                    <div><span class="symbol">${a.ticker}</span></div>
+                    <div style="text-align:right">
+                        <div class="price-val">$${a.price.toFixed(2)}</div>
+                        <div class="change-pct ${a.change1d >= 0 ? 'positive' : 'negative'}">${a.change1d.toFixed(2)}%</div>
+                    </div>
+                </div>
+            `).join('');
+            if (assets.length > 0) loadAsset(assets[0].ticker, list.firstElementChild);
+        }
 
-                assets.forEach(asset => {
-                    const div = document.createElement('div');
-                    div.className = 'asset-item';
-                    const changeClass = asset.change1d >= 0 ? 'positive' : 'negative';
-                    div.innerHTML = `
-                        <div class="asset-info">
-                            <span class="symbol">${asset.ticker}</span>
-                            <span class="name">${asset.name}</span>
-                        </div>
-                        <div class="asset-price">
-                            <div>$${asset.price.toFixed(2)}</div>
-                            <div class="asset-change ${changeClass}">${asset.change1d.toFixed(2)}%</div>
-                        </div>
-                    `;
-                    div.onclick = () => selectAsset(asset.ticker, div);
-                    list.appendChild(div);
+        async function loadAsset(ticker, el) {
+            document.querySelectorAll('.asset-item').forEach(i => i.classList.remove('active'));
+            if (el) el.classList.add('active');
+            
+            const res = await fetch(`data/${ticker}.json`);
+            currentAssetData = await res.json();
+            
+            document.getElementById('active-name').innerText = currentAssetData.name;
+            document.getElementById('active-symbol-tag').innerText = currentAssetData.ticker;
+            document.getElementById('current-price').innerText = `$${currentAssetData.currentPrice.toLocaleString()}`;
+            
+            const c = currentAssetData.performance['1d'];
+            document.getElementById('current-change').innerText = `${c >= 0 ? '+' : ''}${c.toFixed(2)}%`;
+            document.getElementById('current-change').className = c >= 0 ? 'positive' : 'negative';
+
+            // Metrics
+            document.getElementById('m-sma20').innerText = currentAssetData.technical.SMA20 ? `$${currentAssetData.technical.SMA20.toFixed(2)}` : 'N/A';
+            document.getElementById('m-sma50').innerText = currentAssetData.technical.SMA50 ? `$${currentAssetData.technical.SMA50.toFixed(2)}` : 'N/A';
+            document.getElementById('m-1w').innerText = `${currentAssetData.performance['1w'].toFixed(2)}%`;
+            document.getElementById('m-1y').innerText = `${currentAssetData.performance['1y'].toFixed(2)}%`;
+
+            candleSeries.setData(currentAssetData.history);
+            chart.timeScale().fitContent();
+        }
+
+        function showModal() { document.getElementById('api-modal').style.display = 'flex'; }
+        function saveKey() {
+            localStorage.setItem('openai_key', document.getElementById('api-key-input').value);
+            document.getElementById('api-modal').style.display = 'none';
+        }
+
+        async function getAIReview() {
+            const key = localStorage.getItem('openai_key');
+            if (!key) return showModal();
+
+            const chatBox = document.getElementById('ai-chat');
+            chatBox.innerHTML = "Initializing neural uplink... Analysis in progress.";
+
+            try {
+                const response = await fetch("https://api.openai.com/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
+                    body: JSON.stringify({
+                        model: "gpt-4o-mini",
+                        messages: [{
+                            role: "system",
+                            content: "You are HORIZON AI, a high-end metal market analyst. Provide a concise, futuristic market review based on the provided JSON data."
+                        }, {
+                            role: "user",
+                            content: `Analyze this asset: ${JSON.stringify({
+                                name: currentAssetData.name,
+                                price: currentAssetData.currentPrice,
+                                performance: currentAssetData.performance,
+                                indicators: currentAssetData.technical,
+                                news: currentAssetData.cause
+                            })}`
+                        }]
+                    })
                 });
-
-                // Auto-select first
-                if (assets.length > 0) selectAsset(assets[0].ticker, list.firstChild);
-            } catch (e) {
-                console.error("Error loading assets:", e);
-            }
-        }
-
-        async function selectAsset(ticker, element) {
-            document.querySelectorAll('.asset-item').forEach(el => el.classList.remove('active'));
-            element.classList.add('active');
-
-            try {
-                const response = await fetch(`data/${ticker}.json`);
-                const data = await response.json();
-
-                // Update Header
-                document.querySelector('#active-asset-info h1').innerText = data.name;
-                document.querySelector('#active-symbol').innerText = data.ticker;
-                const priceDisplay = document.querySelector('#current-price-display div:first-child');
-                priceDisplay.innerText = `$${data.currentPrice.toLocaleString()}`;
+                const result = await response.json();
+                const text = result.choices[0].message.content;
                 
-                const changeDiv = document.querySelector('#day-change');
-                const dChange = data.performance['1d'];
-                changeDiv.innerText = `${dChange >= 0 ? '+' : ''}${dChange.toFixed(2)}%`;
-                changeDiv.className = dChange >= 0 ? 'positive' : 'negative';
-
-                // Update Stats
-                const updateStat = (id, val) => {
-                    const el = document.getElementById(id);
-                    el.innerText = `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`;
-                    el.className = `stat-value ${val >= 0 ? 'positive' : 'negative'}`;
-                };
-
-                updateStat('perf-1h', data.performance['1h']);
-                updateStat('perf-1d', data.performance['1d']);
-                updateStat('perf-1w', data.performance['1w']);
-                updateStat('perf-1y', data.performance['1y']);
-
-                document.getElementById('trend-desc').innerText = data.cause;
-
-                // Update Chart
-                candleSeries.setData(data.history);
-                chart.timeScale().fitContent();
-
+                // Typewriter effect
+                chatBox.innerHTML = "";
+                let i = 0;
+                let timer = setInterval(() => {
+                    if (i < text.length) {
+                        chatBox.innerHTML += text.charAt(i);
+                        chatBox.scrollTop = chatBox.scrollHeight;
+                        i++;
+                    } else { clearInterval(timer); }
+                }, 15);
             } catch (e) {
-                console.error("Error loading asset data:", e);
+                chatBox.innerHTML = "Error: Failed to connect to AI. Check your API key.";
             }
         }
 
         document.getElementById('asset-search').addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
-            document.querySelectorAll('.asset-item').forEach(item => {
-                const text = item.innerText.toLowerCase();
-                item.style.display = text.includes(val) ? 'flex' : 'none';
+            document.querySelectorAll('.asset-item').forEach(i => {
+                i.style.display = i.innerText.toLowerCase().includes(val) ? 'flex' : 'none';
             });
         });
 
-        initChart();
-        loadAssets();
+        init();
     </script>
 </body>
 </html>
