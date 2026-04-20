@@ -565,7 +565,11 @@
             chatBox.innerHTML = "<span style='color:var(--text-dim)'>Compiling market variables via public AI node...</span>";
 
             try {
-                const prompt = `You are HORIZON, a professional, highly concise structural market intelligence assistant. Provide a brief 3-sentence analysis and predict sentiment based on this real-time data: ${JSON.stringify(currentAssetData || {})}. Analyze in the context of the ${currentCurrency} currency. Start directly with the overall sentiment. Do not use markdown format. Keep it brief.`;
+                // Strip massive history array to prevent URI Too Long / Token Overflow
+                const aiDataContext = { ...currentAssetData };
+                delete aiDataContext.history;
+
+                const prompt = `You are HORIZON, a professional, highly concise structural market intelligence assistant. Provide a brief 3-sentence analysis and predict sentiment based on this real-time data: ${JSON.stringify(aiDataContext || {})}. Analyze in the context of the ${currentCurrency} currency. Start directly with the overall sentiment. Do not use markdown format. Keep it brief.`;
                 
                 const response = await fetch("https://text.pollinations.ai/" + encodeURIComponent(prompt) + "?model=openai");
                 if (!response.ok) throw new Error("API request failed.");
