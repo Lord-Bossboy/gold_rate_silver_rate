@@ -373,7 +373,33 @@
         
         const currencySymbols = { USD: '$', INR: '₹', EUR: '€' };
 
-        function getTvSymbol(t) { return tvSymbolMap[t] || t.replace('=F', '1!'); }
+        function getTvSymbol(t) { 
+            // Smart routing for primary precious metals
+            if (t === "GC=F") {
+                if (currentCurrency === 'INR' && currentWeightMode === '10g') return "MCX:GOLD1!"; // MCX Gold is natively INR per 10g
+                if (currentCurrency === 'INR') return "FX_IDC:XAUINR";
+                if (currentCurrency === 'EUR') return "OANDA:XAUEUR";
+                return "OANDA:XAUUSD";
+            }
+            if (t === "SI=F") {
+                if (currentCurrency === 'INR') return "FX_IDC:XAGINR";
+                if (currentCurrency === 'EUR') return "OANDA:XAGEUR";
+                return "OANDA:XAGUSD";
+            }
+            if (t === "PL=F") {
+                if (currentCurrency === 'INR') return "FX_IDC:XPTINR";
+                if (currentCurrency === 'EUR') return "OANDA:XPTEUR";
+                return "TVC:PLATINUM";
+            }
+            if (t === "PA=F") {
+                if (currentCurrency === 'INR') return "FX_IDC:XPDINR";
+                if (currentCurrency === 'EUR') return "OANDA:XPDEUR";
+                return "TVC:PALLADIUM";
+            }
+            
+            // Fallback to standard base map for ETFs/Equities
+            return tvSymbolMap[t] || t.replace('=F', '1!'); 
+        }
         
         function getWeightMultiplier(t) {
             if (currentWeightMode === 'base') return 1;
@@ -459,7 +485,9 @@
                 document.getElementById('active-symbol-tag').innerText = "Real-Time Tracking Active";
             }
             
-            document.getElementById('chart-disclaimer').style.display = (currentCurrency !== 'USD' || currentWeightMode !== 'base') ? 'block' : 'none';
+            const hasCustomChart = ["GC=F", "SI=F", "PL=F", "PA=F"].includes(ticker);
+            const isMismatch = (currentCurrency !== 'USD' || currentWeightMode !== 'base') && !hasCustomChart;
+            document.getElementById('chart-disclaimer').style.display = isMismatch ? 'block' : 'none';
 
             refreshMetricsUI();
             renderChart(ticker);
