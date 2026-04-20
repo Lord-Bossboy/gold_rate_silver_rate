@@ -28,12 +28,13 @@ def get_trend_analysis(ticker_obj):
         return "Market data processing."
 
 def calculate_performance(df_daily, df_hourly):
-    perf = {"1h": 0.0, "1d": 0.0, "1w": 0.0, "1y": 0.0}
+    perf = {"1h": 0.0, "1d": 0.0, "1w": 0.0, "1m": 0.0, "1y": 0.0}
     try:
         if not df_daily.empty:
             current = df_daily['Close'].iloc[-1]
             perf["1d"] = ((current - df_daily['Close'].iloc[-2]) / df_daily['Close'].iloc[-2]) * 100 if len(df_daily) > 1 else 0
             perf["1w"] = ((current - df_daily['Close'].iloc[-5]) / df_daily['Close'].iloc[-5]) * 100 if len(df_daily) > 5 else 0
+            perf["1m"] = ((current - df_daily['Close'].iloc[-21]) / df_daily['Close'].iloc[-21]) * 100 if len(df_daily) > 21 else 0
             perf["1y"] = ((current - df_daily['Close'].iloc[-252]) / df_daily['Close'].iloc[-252]) * 100 if len(df_daily) > 252 else 0
         
         if not df_hourly.empty:
@@ -114,7 +115,10 @@ def main():
                 "ticker": result["ticker"],
                 "name": result["name"],
                 "price": result["currentPrice"],
-                "change1d": result["performance"]["1d"]
+                "change1h": result["performance"]["1h"],
+                "change1d": result["performance"]["1d"],
+                "change1w": result["performance"]["1w"],
+                "change1m": result["performance"]["1m"]
             })
     with open('data/assets.json', 'w') as f:
         json.dump(all_summaries, f)
