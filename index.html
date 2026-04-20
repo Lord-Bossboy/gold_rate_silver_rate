@@ -3,20 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MetalTrack Horizon | AI-Powered Market Command</title>
-    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>MetalTrack Horizon | Elite Market Command</title>
+    <!-- TradingView Script -->
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-deep: #050608;
-            --panel-glass: rgba(18, 22, 28, 0.7);
-            --neon-gold: #f0b90b;
-            --neon-cyan: #00f2ff;
-            --text-main: #e0e6ed;
-            --text-dim: #94a3b8;
-            --gain: #00ff9d;
-            --loss: #ff3b5c;
-            --accent-glow: rgba(0, 242, 255, 0.2);
+            --bg-deep: #0a0a0a;
+            --panel-glass: rgba(20, 20, 22, 0.85);
+            --accent-silver: #b0b4b8;
+            --accent-light: #e0e4e8;
+            --text-main: #d4d4d4;
+            --text-dim: #7a7a7a;
+            --border: #262626;
+            --border-hover: #3a3a3a;
+            --gain: #4a8a65;
+            --loss: #b35959;
+            --hover-bg: rgba(255, 255, 255, 0.03);
+            --active-bg: rgba(255, 255, 255, 0.06);
         }
 
         * { box-sizing: border-box; }
@@ -26,134 +30,125 @@
             padding: 0;
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-deep);
-            background-image: 
-                radial-gradient(circle at 50% 50%, #1a1e2e 0%, transparent 80%),
-                linear-gradient(rgba(18, 22, 28, 0.1) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(18, 22, 28, 0.1) 1px, transparent 1px);
-            background-size: 100% 100%, 50px 50px, 50px 50px;
+            background-image: radial-gradient(circle at top right, #141414, transparent 60%);
             color: var(--text-main);
             height: 100vh;
             display: flex;
             overflow: hidden;
         }
 
-        /* Futuristic Sidebar */
+        /* Sidebar Left */
         #left-sidebar {
             width: 320px;
             background: var(--panel-glass);
-            backdrop-filter: blur(15px);
-            border-right: 1px solid rgba(0, 242, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
             z-index: 10;
         }
 
         .brand {
             padding: 25px;
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.4rem;
-            font-weight: 700;
-            letter-spacing: 2px;
-            background: linear-gradient(90deg, var(--neon-gold), var(--neon-cyan));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 1.3rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--accent-light);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         #search-container { padding: 15px; }
         #asset-search {
             width: 100%;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(0, 242, 255, 0.2);
-            color: white;
-            padding: 12px;
-            border-radius: 8px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border);
+            color: var(--accent-light);
+            padding: 10px 15px;
+            border-radius: 6px;
             outline: none;
-            transition: all 0.3s;
+            transition: border-color 0.3s;
         }
-        #asset-search:focus { border-color: var(--neon-cyan); box-shadow: 0 0 10px var(--accent-glow); }
+        #asset-search:focus { border-color: var(--accent-silver); }
 
         .asset-list { flex-grow: 1; overflow-y: auto; padding: 10px; }
         .asset-item {
-            padding: 15px;
-            margin-bottom: 8px;
-            border-radius: 10px;
+            padding: 12px 15px;
+            margin-bottom: 4px;
+            border-radius: 6px;
             cursor: pointer;
-            transition: all 0.3s;
-            background: rgba(255,255,255,0.02);
+            transition: all 0.2s ease;
+            background: transparent;
             border: 1px solid transparent;
             display: flex;
             justify-content: space-between;
+            align-items: center;
         }
-        .asset-item:hover { background: rgba(0, 242, 255, 0.05); transform: translateX(5px); }
+        .asset-item:hover { background: var(--hover-bg); border-color: var(--border-hover); }
         .asset-item.active { 
-            background: rgba(0, 242, 255, 0.1); 
-            border-color: var(--neon-cyan);
-            box-shadow: 0 0 15px rgba(0, 242, 255, 0.1);
+            background: var(--active-bg); 
+            border-color: var(--border-hover);
+            border-left: 3px solid var(--accent-silver);
         }
 
-        .symbol { font-family: 'Orbitron'; font-weight: 700; color: var(--neon-cyan); }
-        .price-val { font-weight: 600; }
-        .change-pct { font-size: 0.8rem; margin-top: 4px; }
+        .symbol { font-family: 'Orbitron'; font-weight: 600; color: var(--accent-light); font-size: 0.95rem; }
+        .price-val { font-weight: 500; font-size: 0.95rem; }
+        .change-pct { font-size: 0.75rem; margin-top: 2px; }
 
         /* Main Viewport */
         #main-viewport {
             flex-grow: 1;
             display: flex;
             flex-direction: column;
-            padding: 20px;
+            padding: 0;
             position: relative;
-        }
-
-        .header-stats {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            margin-bottom: 20px;
-            padding: 0 10px;
+            background: #000; /* For TradingView widget wrapper */
         }
 
         #chart-frame {
-            flex-grow: 1;
-            background: rgba(0,0,0,0.4);
-            border-radius: 15px;
-            border: 1px solid rgba(255,255,255,0.05);
-            position: relative;
-            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
         }
         
         /* AI Assistant Sidebar */
         #ai-sidebar {
             width: 380px;
             background: var(--panel-glass);
-            backdrop-filter: blur(20px);
-            border-left: 1px solid rgba(0, 242, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-left: 1px solid var(--border);
             display: flex;
             flex-direction: column;
             padding: 20px;
+            box-shadow: -5px 0 20px rgba(0,0,0,0.5);
         }
 
         .panel-title {
             font-family: 'Orbitron';
-            font-size: 1rem;
+            font-size: 0.9rem;
             margin-bottom: 20px;
-            color: var(--neon-gold);
+            color: var(--accent-silver);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+            letter-spacing: 1px;
         }
 
         .ai-chat-box {
             flex-grow: 1;
             background: rgba(0,0,0,0.3);
-            border-radius: 12px;
+            border-radius: 8px;
             padding: 15px;
             overflow-y: auto;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             line-height: 1.6;
-            color: #d1d4dc;
-            border: 1px solid rgba(255,255,255,0.05);
+            color: var(--text-main);
+            border: 1px solid var(--border);
         }
 
         .ai-input-group {
@@ -162,193 +157,245 @@
             gap: 8px;
         }
 
-        .btn-neon {
+        .btn-silver {
             background: transparent;
-            border: 1px solid var(--neon-cyan);
-            color: var(--neon-cyan);
-            padding: 10px 15px;
-            border-radius: 8px;
+            border: 1px solid var(--border-hover);
+            color: var(--accent-silver);
+            padding: 12px;
+            border-radius: 6px;
             cursor: pointer;
             font-family: 'Orbitron';
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
             transition: all 0.3s;
+            width: 100%;
+            letter-spacing: 1px;
         }
-        .btn-neon:hover { background: var(--neon-cyan); color: black; box-shadow: 0 0 20px var(--neon-cyan); }
+        .btn-silver:hover { background: rgba(255,255,255,0.05); color: #fff; border-color: var(--accent-silver); }
 
-        .settings-icon { cursor: pointer; opacity: 0.5; transition: 0.3s; }
-        .settings-icon:hover { opacity: 1; color: var(--neon-cyan); }
+        .settings-icon { cursor: pointer; color: var(--text-dim); transition: 0.3s; }
+        .settings-icon:hover { color: var(--accent-light); }
 
         /* Tech Metrics */
+        .metrics-wrapper {
+            margin-bottom: 20px;
+        }
+        .metrics-header {
+            font-family: 'Orbitron';
+            font-size: 0.75rem;
+            color: var(--accent-silver);
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
         .metrics-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: 8px;
         }
         .metric-card {
-            background: rgba(255,255,255,0.03);
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.05);
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
         }
-        .metric-label { font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 4px; }
-        .metric-value { font-family: 'Orbitron'; font-size: 0.9rem; }
+        .metric-label { font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;}
+        .metric-value { font-family: 'Inter'; font-weight: 500; font-size: 0.85rem; color: var(--accent-light);}
 
-        .scanline {
-            width: 100%;
-            height: 100px;
-            z-index: 100;
-            background: linear-gradient(0deg, rgba(0, 242, 255, 0.05) 0%, transparent 100%);
-            position: absolute;
-            bottom: 100%;
-            animation: scan 8s linear infinite;
-            pointer-events: none;
-        }
+        /* Scrollbars */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 2px; }
 
-        @keyframes scan { from { bottom: 100%; } to { bottom: -100px; } }
-        
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000;
+            backdrop-filter: blur(5px);
         }
         .modal-content {
-            background: var(--sidebar-bg); padding: 30px; border-radius: 15px; border: 1px solid var(--neon-cyan);
-            width: 400px; text-align: center;
+            background: var(--bg-deep); padding: 30px; border-radius: 8px; border: 1px solid var(--border-hover);
+            width: 350px; text-align: center;
         }
 
         .positive { color: var(--gain); }
         .negative { color: var(--loss); }
+
+        /* Current Selection Display */
+        #active-info-panel {
+            padding: 10px 0;
+        }
+        #active-name { font-size: 1.1rem; font-weight: 500; color: #fff; margin-bottom: 5px;}
+        #active-symbol-tag { font-family: 'Orbitron'; font-size: 0.75rem; color: var(--text-dim); }
     </style>
 </head>
 <body>
 
-    <div class="scanline"></div>
-
     <!-- API Key Modal -->
     <div id="api-modal" class="modal">
         <div class="modal-content">
-            <h3 style="font-family: 'Orbitron';">Enter OpenAI API Key</h3>
-            <p style="font-size: 0.8rem; color: var(--text-dim);">Your key is stored locally in your browser only.</p>
-            <input type="password" id="api-key-input" style="width: 100%; padding: 10px; margin: 15px 0; border-radius: 5px; border: 1px solid #333; background: #000; color: #fff;">
-            <button class="btn-neon" onclick="saveKey()">Save Access Key</button>
+            <h3 style="font-family: 'Orbitron'; font-size: 1rem; color: var(--accent-light); margin-top: 0;">OpenAI Intelligence</h3>
+            <p style="font-size: 0.75rem; color: var(--text-dim); line-height: 1.5;">Enter API key to unlock market analysis. Key is stored locally via browser sessions.</p>
+            <input type="password" id="api-key-input" placeholder="sk-..." style="width: 100%; padding: 10px; margin: 15px 0; border-radius: 4px; border: 1px solid var(--border); background: #000; color: #fff; outline: none;">
+            <button class="btn-silver" onclick="saveKey()">Initialize</button>
         </div>
     </div>
 
     <div id="left-sidebar">
-        <div class="brand">HORIZON v2.0</div>
-        <div id="search-container">
-            <input type="text" id="asset-search" placeholder="SEARCH ASSETS...">
+        <div class="brand">
+            <span style="display:inline-block; width:8px; height:8px; background:var(--accent-silver); border-radius:50%;"></span>
+            HORIZON
         </div>
-        <div class="asset-list" id="asset-list"></div>
+        <div id="search-container">
+            <input type="text" id="asset-search" placeholder="Search Markets...">
+        </div>
+        <div class="asset-list" id="asset-list">
+            <div style="padding: 15px; font-size: 0.85rem; color: var(--text-dim);">
+                <p>Establishing connection...</p>
+                <p style="font-size: 0.7rem; margin-top: 5px;">If this persists on a local file, please <a href="https://lord-bossboy.github.io/gold_rate_silver_rate/" style="color:var(--accent-silver)" target="_blank">view the online deploy</a>.</p>
+            </div>
+        </div>
     </div>
 
     <div id="main-viewport">
-        <div class="header-stats">
-            <div>
-                <div id="active-name" style="font-family: 'Orbitron'; font-size: 1.8rem; font-weight: 700;">SELECT ASSET</div>
-                <div id="active-symbol-tag" style="color: var(--neon-cyan); font-weight: 600; letter-spacing: 1px;">-</div>
-            </div>
-            <div style="text-align: right;">
-                <div id="current-price" style="font-size: 2.2rem; font-family: 'Orbitron';">$--</div>
-                <div id="current-change" style="font-weight: 600;">--%</div>
-            </div>
-        </div>
+        <!-- TradingView Advanced Chart will be injected here -->
         <div id="chart-frame"></div>
     </div>
 
     <div id="ai-sidebar">
         <div class="panel-title">
-            <span>AI ANALYSIS</span>
+            <span>MARKET INTELLIGENCE</span>
             <span class="settings-icon" onclick="showModal()">⚙</span>
         </div>
 
-        <div class="metrics-grid">
-            <div class="metric-card">
-                <div class="metric-label">SMA 20</div>
-                <div id="m-sma20" class="metric-value">-</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-label">SMA 50</div>
-                <div id="m-sma50" class="metric-value">-</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-label">1W VOL</div>
-                <div id="m-1w" class="metric-value">-</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-label">1Y TREND</div>
-                <div id="m-1y" class="metric-value">-</div>
+        <div id="active-info-panel">
+            <div id="active-name">Select Asset</div>
+            <div id="active-symbol-tag">-</div>
+        </div>
+
+        <div class="metrics-wrapper">
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">1W Return</div>
+                    <div id="m-1w" class="metric-value">-</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">1Y Return</div>
+                    <div id="m-1y" class="metric-value">-</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">20D SMA</div>
+                    <div id="m-sma20" class="metric-value">-</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">50D SMA</div>
+                    <div id="m-sma50" class="metric-value">-</div>
+                </div>
             </div>
         </div>
 
         <div id="ai-chat" class="ai-chat-box">
-            System ready. Select a metal and click "Generate Review" to start AI analysis.
+            Awaiting selection to compile market insight.
         </div>
 
         <div class="ai-input-group">
-            <button class="btn-neon" style="width: 100%;" onclick="getAIReview()">Generate AI Review</button>
+            <button class="btn-silver" onclick="getAIReview()">Commence Analysis</button>
         </div>
     </div>
 
     <script>
-        let chart, candleSeries, currentAssetData;
+        let currentAssetData;
 
-        function init() {
-            const chartDiv = document.getElementById('chart-frame');
-            chart = LightweightCharts.createChart(chartDiv, {
-                layout: { backgroundColor: 'transparent', textColor: '#94a3b8' },
-                grid: { vertLines: { color: 'rgba(255,255,255,0.03)' }, horzLines: { color: 'rgba(255,255,255,0.03)' } },
-                rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.1, bottom: 0.1 } },
-                timeScale: { borderVisible: false },
-            });
-            candleSeries = chart.addCandlestickSeries({ upColor: '#00ff9d', downColor: '#ff3b5c', borderVisible: false, wickUpColor: '#00ff9d', wickDownColor: '#ff3b5c' });
-            window.addEventListener('resize', () => chart.resize(chartDiv.clientWidth, chartDiv.clientHeight));
-            loadAssetList();
+        // Map Yahoo Finance Tickers to TradingView Symbols for Real-Time Charts
+        const tvSymbolMap = {
+            "GC=F": "COMEX:GC1!", "SI=F": "COMEX:SI1!", "PL=F": "NYMEX:PL1!", "PA=F": "NYMEX:PA1!", "HG=F": "COMEX:HG1!",
+            "GLD": "AMEX:GLD", "SLV": "AMEX:SLV", "PPLT": "AMEX:PPLT", "PALL": "AMEX:PALL", "CPER": "AMEX:CPER",
+            "LIT": "AMEX:LIT", "REMX": "AMEX:REMX", "BATT": "AMEX:BATT", "URA": "AMEX:URA", "COPX": "AMEX:COPX",
+            "SIL": "AMEX:SIL", "SILJ": "AMEX:SILJ", "GDX": "AMEX:GDX", "GDXJ": "AMEX:GDXJ", "PICK": "AMEX:PICK",
+            "XME": "AMEX:XME", "DBB": "AMEX:DBB", "JJCTF": "OTC:JJCTF", "FCX": "NYSE:FCX", "BHP": "NYSE:BHP",
+            "RIO": "NYSE:RIO", "VALE": "NYSE:VALE", "AA": "NYSE:AA", "NEM": "NYSE:NEM", "GOLD": "NYSE:GOLD",
+            "GLNCY": "OTC:GLNCY", "SCCO": "NYSE:SCCO", "AEM": "NYSE:AEM", "WPM": "NYSE:WPM", "FNV": "NYSE:FNV",
+            "KGC": "NYSE:KGC", "AU": "NYSE:AU", "GFI": "NYSE:GFI", "PAAS": "NASDAQ:PAAS", "SSRM": "NASDAQ:SSRM",
+            "CDE": "NYSE:CDE", "AGI": "NYSE:AGI", "RGLD": "NASDAQ:RGLD", "SAND": "NYSE:SAND", "OR": "NYSE:OR",
+            "MP": "NYSE:MP", "CLF": "NYSE:CLF", "X": "NYSE:X", "TECK": "NYSE:TECK", "HMY": "NYSE:HMY", 
+            "EGO": "NYSE:EGO", "IAG": "NYSE:IAG"
+        };
+
+        function getTvSymbol(ticker) {
+            if (tvSymbolMap[ticker]) return tvSymbolMap[ticker];
+            return ticker.replace('=F', '1!');
         }
 
         async function loadAssetList() {
-            const res = await fetch('data/assets.json');
-            const assets = await res.json();
-            const list = document.getElementById('asset-list');
-            list.innerHTML = assets.map(a => `
-                <div class="asset-item" onclick="loadAsset('${a.ticker}', this)">
-                    <div><span class="symbol">${a.ticker}</span></div>
-                    <div style="text-align:right">
-                        <div class="price-val">$${a.price.toFixed(2)}</div>
-                        <div class="change-pct ${a.change1d >= 0 ? 'positive' : 'negative'}">${a.change1d.toFixed(2)}%</div>
+            try {
+                const res = await fetch('data/assets.json');
+                const assets = await res.json();
+                const list = document.getElementById('asset-list');
+                list.innerHTML = assets.map(a => `
+                    <div class="asset-item" onclick="loadAsset('${a.ticker}', this)">
+                        <div><span class="symbol">${a.ticker}</span></div>
+                        <div style="text-align:right">
+                            <div class="price-val">$${a.price.toFixed(2)}</div>
+                            <div class="change-pct ${a.change1d >= 0 ? 'positive' : 'negative'}">${a.change1d.toFixed(2)}%</div>
+                        </div>
                     </div>
-                </div>
-            `).join('');
-            if (assets.length > 0) loadAsset(assets[0].ticker, list.firstElementChild);
+                `).join('');
+                if (assets.length > 0) loadAsset(assets[0].ticker, list.firstElementChild);
+            } catch (e) {
+                console.error("Failed to fetch assets.json", e);
+            }
         }
 
         async function loadAsset(ticker, el) {
             document.querySelectorAll('.asset-item').forEach(i => i.classList.remove('active'));
             if (el) el.classList.add('active');
             
-            const res = await fetch(`data/${ticker}.json`);
-            currentAssetData = await res.json();
-            
-            document.getElementById('active-name').innerText = currentAssetData.name;
-            document.getElementById('active-symbol-tag').innerText = currentAssetData.ticker;
-            document.getElementById('current-price').innerText = `$${currentAssetData.currentPrice.toLocaleString()}`;
-            
-            const c = currentAssetData.performance['1d'];
-            document.getElementById('current-change').innerText = `${c >= 0 ? '+' : ''}${c.toFixed(2)}%`;
-            document.getElementById('current-change').className = c >= 0 ? 'positive' : 'negative';
+            try {
+                // Fetch AI background data calculated by the backend
+                const res = await fetch(`data/${ticker}.json`);
+                currentAssetData = await res.json();
+                
+                document.getElementById('active-name').innerText = currentAssetData.name;
+                document.getElementById('active-symbol-tag').innerText = currentAssetData.ticker;
 
-            // Metrics
-            document.getElementById('m-sma20').innerText = currentAssetData.technical.SMA20 ? `$${currentAssetData.technical.SMA20.toFixed(2)}` : 'N/A';
-            document.getElementById('m-sma50').innerText = currentAssetData.technical.SMA50 ? `$${currentAssetData.technical.SMA50.toFixed(2)}` : 'N/A';
-            document.getElementById('m-1w').innerText = `${currentAssetData.performance['1w'].toFixed(2)}%`;
-            document.getElementById('m-1y').innerText = `${currentAssetData.performance['1y'].toFixed(2)}%`;
+                // Metrics
+                document.getElementById('m-sma20').innerText = currentAssetData.technical.SMA20 ? `$${currentAssetData.technical.SMA20.toFixed(2)}` : 'N/A';
+                document.getElementById('m-sma50').innerText = currentAssetData.technical.SMA50 ? `$${currentAssetData.technical.SMA50.toFixed(2)}` : 'N/A';
+                document.getElementById('m-1w').innerText = `${currentAssetData.performance['1w'].toFixed(2)}%`;
+                document.getElementById('m-1y').innerText = `${currentAssetData.performance['1y'].toFixed(2)}%`;
 
-            candleSeries.setData(currentAssetData.history);
-            chart.timeScale().fitContent();
+                document.getElementById('m-1w').className = `metric-value ${currentAssetData.performance['1w'] >= 0 ? 'positive' : 'negative'}`;
+                document.getElementById('m-1y').className = `metric-value ${currentAssetData.performance['1y'] >= 0 ? 'positive' : 'negative'}`;
+
+            } catch (e) {
+                console.warn(`Could not load context data for ${ticker}. Realtime chart will still load.`);
+                // Fallback for UI if backend data fails
+                currentAssetData = { name: ticker, ticker: ticker };
+                document.getElementById('active-name').innerText = ticker;
+                document.getElementById('active-symbol-tag').innerText = "Live Market Data";
+            }
+
+            // Render Real-Time TradingView Chart
+            new TradingView.widget({
+                "autosize": true,
+                "symbol": getTvSymbol(ticker),
+                "interval": "D",
+                "timezone": "Etc/UTC",
+                "theme": "dark",
+                "style": "1",
+                "locale": "en",
+                "enable_publishing": false,
+                "backgroundColor": "#050607", // Deep blend with BG
+                "gridColor": "rgba(255, 255, 255, 0.03)",
+                "hide_top_toolbar": false,
+                "hide_legend": false,
+                "save_image": false,
+                "container_id": "chart-frame"
+            });
+            
+            document.getElementById('ai-chat').innerHTML = "Ready for insight processing.";
         }
 
         function showModal() { document.getElementById('api-modal').style.display = 'flex'; }
+        
         function saveKey() {
             localStorage.setItem('openai_key', document.getElementById('api-key-input').value);
             document.getElementById('api-modal').style.display = 'none';
@@ -359,7 +406,7 @@
             if (!key) return showModal();
 
             const chatBox = document.getElementById('ai-chat');
-            chatBox.innerHTML = "Initializing neural uplink... Analysis in progress.";
+            chatBox.innerHTML = "<span style='color:var(--text-dim)'>Compiling market variables...</span>";
 
             try {
                 const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -369,23 +416,20 @@
                         model: "gpt-4o-mini",
                         messages: [{
                             role: "system",
-                            content: "You are HORIZON AI, a high-end metal market analyst. Provide a concise, futuristic market review based on the provided JSON data."
+                            content: "You are HORIZON, a concise structural market intelligence assistant. Analyze the provided asset metrics and predict sentiment. Do not use markdown, keep it brief and professional."
                         }, {
                             role: "user",
-                            content: `Analyze this asset: ${JSON.stringify({
-                                name: currentAssetData.name,
-                                price: currentAssetData.currentPrice,
-                                performance: currentAssetData.performance,
-                                indicators: currentAssetData.technical,
-                                news: currentAssetData.cause
-                            })}`
+                            content: `Analyze: ${JSON.stringify(currentAssetData || {})}`
                         }]
                     })
                 });
+                
+                if (!response.ok) throw new Error("API request failed.");
+                
                 const result = await response.json();
                 const text = result.choices[0].message.content;
                 
-                // Typewriter effect
+                // Telemetry typing effect
                 chatBox.innerHTML = "";
                 let i = 0;
                 let timer = setInterval(() => {
@@ -394,9 +438,9 @@
                         chatBox.scrollTop = chatBox.scrollHeight;
                         i++;
                     } else { clearInterval(timer); }
-                }, 15);
+                }, 10);
             } catch (e) {
-                chatBox.innerHTML = "Error: Failed to connect to AI. Check your API key.";
+                chatBox.innerHTML = "<span style='color:var(--loss)'>Connection failed. Verify API Key validity.</span>";
             }
         }
 
@@ -407,7 +451,13 @@
             });
         });
 
-        init();
+        // Add note about API key to input if exists
+        window.addEventListener('DOMContentLoaded', () => {
+             if (localStorage.getItem('openai_key')) {
+                 document.getElementById('api-key-input').value = localStorage.getItem('openai_key');
+             }
+             loadAssetList();
+        });
     </script>
 </body>
 </html>
