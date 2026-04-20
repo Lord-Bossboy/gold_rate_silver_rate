@@ -262,23 +262,23 @@
                 <span style="display:inline-block; width:8px; height:8px; background:var(--accent-silver); border-radius:50%; margin-right:5px;"></span>
                 HORIZON
             </div>
-            <div style="display: flex; gap: 5px;">
-                <select id="timeframe-selector" class="currency-select" onchange="changeTimeframe()">
-                    <option value="1h">1H</option>
-                    <option value="1d" selected>1D</option>
-                    <option value="1w">1W</option>
-                    <option value="1m">1M</option>
-                </select>
-                <select id="weight-selector" class="currency-select" onchange="changeWeight()">
-                    <option value="base">Standard (Oz)</option>
-                    <option value="10g">Per 10 Grams</option>
-                </select>
-                <select id="currency-selector" class="currency-select" onchange="changeCurrency()">
-                    <option value="USD">USD ($)</option>
-                    <option value="INR">INR (₹)</option>
-                    <option value="EUR">EUR (€)</option>
-                </select>
-            </div>
+        </div>
+        <div id="controls-bar" style="display: flex; gap: 5px; padding: 15px 15px 0 15px; justify-content: space-between;">
+            <select id="timeframe-selector" class="currency-select" style="flex: 1; text-align: center;" onchange="changeTimeframe()">
+                <option value="1h">1H</option>
+                <option value="1d" selected>1D</option>
+                <option value="1w">1W</option>
+                <option value="1m">1M</option>
+            </select>
+            <select id="weight-selector" class="currency-select" style="flex: 1.5; text-align: center;" onchange="changeWeight()">
+                <option value="base">Oz/Share</option>
+                <option value="10g">10 Grams</option>
+            </select>
+            <select id="currency-selector" class="currency-select" style="flex: 1; text-align: center;" onchange="changeCurrency()">
+                <option value="USD">USD</option>
+                <option value="INR">INR</option>
+                <option value="EUR">EUR</option>
+            </select>
         </div>
         <div id="search-container">
             <input type="text" id="asset-search" placeholder="Search Markets...">
@@ -302,6 +302,7 @@
         <div id="active-info-panel">
             <div id="active-name">Loading...</div>
             <div id="active-symbol-tag">-</div>
+            <div id="chart-disclaimer" style="font-size: 0.6rem; color: var(--loss); margin-top: 5px; display: none;">*Live Chart locked to USD/Base Weight due to exchange embed constraints</div>
         </div>
 
         <div class="metrics-wrapper">
@@ -477,6 +478,8 @@
                 document.getElementById('active-name').innerText = currentAssetData.name;
                 document.getElementById('active-symbol-tag').innerText = "Real-Time Tracking Active";
             }
+            
+            document.getElementById('chart-disclaimer').style.display = (currentCurrency !== 'USD' || currentWeightMode !== 'base') ? 'block' : 'none';
 
             refreshMetricsUI();
             renderChart(ticker);
