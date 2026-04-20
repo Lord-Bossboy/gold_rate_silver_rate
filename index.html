@@ -262,11 +262,19 @@
                 <span style="display:inline-block; width:8px; height:8px; background:var(--accent-silver); border-radius:50%; margin-right:5px;"></span>
                 HORIZON
             </div>
-            <select id="currency-selector" class="currency-select" onchange="changeCurrency()">
-                <option value="USD">USD ($)</option>
-                <option value="INR">INR (₹)</option>
-                <option value="EUR">EUR (€)</option>
-            </select>
+            <div style="display: flex; gap: 5px;">
+                <select id="timeframe-selector" class="currency-select" onchange="changeTimeframe()">
+                    <option value="1h">1H</option>
+                    <option value="1d" selected>1D</option>
+                    <option value="1w">1W</option>
+                    <option value="1m">1M</option>
+                </select>
+                <select id="currency-selector" class="currency-select" onchange="changeCurrency()">
+                    <option value="USD">USD ($)</option>
+                    <option value="INR">INR (₹)</option>
+                    <option value="EUR">EUR (€)</option>
+                </select>
+            </div>
         </div>
         <div id="search-container">
             <input type="text" id="asset-search" placeholder="Search Markets...">
@@ -326,6 +334,8 @@
         // Data & State Configuration
         let currentAssetData = null;
         let currentTicker = "GC=F"; // Default to gold instantly
+        let currentTimeframe = "1d";
+        const tvIntervalMap = { "1h": "60", "1d": "D", "1w": "W", "1m": "M" };
         
         let fxRates = { USD: 1, INR: 83.0, EUR: 0.92 }; // Defaults, updated via API
         let currentCurrency = 'USD';
@@ -362,7 +372,7 @@
 
         // Map Yahoo Finance to TradingView
         const tvSymbolMap = {
-            "GC=F": "COMEX:GC1!", "SI=F": "COMEX:SI1!", "PL=F": "NYMEX:PL1!", "PA=F": "NYMEX:PA1!", "HG=F": "COMEX:HG1!",
+            "GC=F": "OANDA:XAUUSD", "SI=F": "OANDA:XAGUSD", "PL=F": "TVC:PLATINUM", "PA=F": "TVC:PALLADIUM", "HG=F": "TVC:COPPER",
             "GLD": "AMEX:GLD", "SLV": "AMEX:SLV", "PPLT": "AMEX:PPLT", "PALL": "AMEX:PALL", "CPER": "AMEX:CPER",
             "LIT": "AMEX:LIT", "REMX": "AMEX:REMX", "BATT": "AMEX:BATT", "URA": "AMEX:URA", "COPX": "AMEX:COPX",
             "SIL": "AMEX:SIL", "SILJ": "AMEX:SILJ", "GDX": "AMEX:GDX", "GDXJ": "AMEX:GDXJ", "PICK": "AMEX:PICK",
@@ -410,8 +420,11 @@
 
             const list = document.getElementById('asset-list');
             list.innerHTML = assets.map((a, index) => {
+                const changeKey = 'change' + currentTimeframe;
+                const changeVal = a[changeKey] || 0;
+                
                 const priceHtml = a.price ? `<div class="price-val">${formatPrice(a.price)}</div>` : `<div style="font-size:0.75rem; color:var(--text-dim)">LIVE DATA</div>`;
-                const changeHtml = a.price ? `<div class="change-pct ${a.change1d >= 0 ? 'positive' : 'negative'}">${a.change1d.toFixed(2)}%</div>` : ``;
+                const changeHtml = a.price ? `<div class="change-pct ${changeVal >= 0 ? 'positive' : 'negative'}">${changeVal.toFixed(2)}%</div>` : ``;
                 
                 return `
                     <div class="asset-item ${a.ticker === currentTicker ? 'active' : ''}" 
@@ -473,27 +486,29 @@
             }
         }
 
+        function changeTimeframe() {
+            currentTimeframe = document.getElementById('timeframe-selector').value;
+            loadAssetList();
+            renderChart(currentTicker);
+        }
+
         function changeCurrency() {
             currentCurrency = document.getElementById('currency-selector').value;
-            // Re-render sidebar prices
             loadAssetList();
-            // Re-render metrics UI
             refreshMetricsUI();
-            // Re-render tradingview chart with new currency
             renderChart(currentTicker);
         }
 
         function renderChart(ticker) {
+            document.getElementById('chart-frame').innerHTML = '';
             new TradingView.widget({
                 "autosize": true,
                 "symbol": getTvSymbol(ticker),
-                "interval": "D",
+                "interval": tvIntervalMap[currentTimeframe],
                 "timezone": "Etc/UTC",
                 "theme": "dark",
                 "style": "1",
                 "locale": "en",
-                // Attempt to force currency on supported assets
-                "currency": currentCurrency, 
                 "enable_publishing": false,
                 "backgroundColor": "#000000",
                 "gridColor": "rgba(255, 255, 255, 0.03)",
