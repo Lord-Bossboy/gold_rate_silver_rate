@@ -269,6 +269,10 @@
                     <option value="1w">1W</option>
                     <option value="1m">1M</option>
                 </select>
+                <select id="weight-selector" class="currency-select" onchange="changeWeight()">
+                    <option value="base">Standard (Oz)</option>
+                    <option value="10g">Per 10 Grams</option>
+                </select>
                 <select id="currency-selector" class="currency-select" onchange="changeCurrency()">
                     <option value="USD">USD ($)</option>
                     <option value="INR">INR (₹)</option>
@@ -336,6 +340,7 @@
         let currentTicker = "GC=F"; // Default to gold instantly
         let currentTimeframe = "1d";
         const tvIntervalMap = { "1h": "60", "1d": "D", "1w": "W", "1m": "M" };
+        let currentWeightMode = 'base';
         
         let fxRates = { USD: 1, INR: 83.0, EUR: 0.92 }; // Defaults, updated via API
         let currentCurrency = 'USD';
@@ -388,9 +393,19 @@
         const currencySymbols = { USD: '$', INR: '₹', EUR: '€' };
 
         function getTvSymbol(t) { return tvSymbolMap[t] || t.replace('=F', '1!'); }
-        function formatPrice(val) {
+        
+        function getWeightMultiplier(t) {
+            if (currentWeightMode === 'base') return 1;
+            const preciousMetals = ["GC=F", "SI=F", "PL=F", "PA=F"];
+            if (preciousMetals.includes(t)) return 0.321507465; // 1 Troy Oz = 31.103g -> 10/31.103
+            if (t === "HG=F") return 0.0220462; // Copper is per lb -> 10/453.59
+            return 1; // Stocks & ETFs shouldn't be converted to 10 grams structurally
+        }
+
+        function formatPrice(val, t) {
             if (!val || isNaN(val)) return 'N/A';
-            const converted = val * fxRates[currentCurrency];
+            const multiplier = getWeightMultiplier(t || currentTicker);
+            const converted = val * fxRates[currentCurrency] * multiplier;
             return `${currencySymbols[currentCurrency]}${converted.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         }
 
@@ -423,7 +438,7 @@
                 const changeKey = 'change' + currentTimeframe;
                 const changeVal = a[changeKey] || 0;
                 
-                const priceHtml = a.price ? `<div class="price-val">${formatPrice(a.price)}</div>` : `<div style="font-size:0.75rem; color:var(--text-dim)">LIVE DATA</div>`;
+                const priceHtml = a.price ? `<div class="price-val">${formatPrice(a.price, a.ticker)}</div>` : `<div style="font-size:0.75rem; color:var(--text-dim)">LIVE DATA</div>`;
                 const changeHtml = a.price ? `<div class="change-pct ${changeVal >= 0 ? 'positive' : 'negative'}">${changeVal.toFixed(2)}%</div>` : ``;
                 
                 return `
@@ -470,8 +485,8 @@
 
         function refreshMetricsUI() {
             if(currentAssetData && currentAssetData.technical) {
-                document.getElementById('m-sma20').innerText = currentAssetData.technical.SMA20 ? formatPrice(currentAssetData.technical.SMA20) : 'N/A';
-                document.getElementById('m-sma50').innerText = currentAssetData.technical.SMA50 ? formatPrice(currentAssetData.technical.SMA50) : 'N/A';
+                document.getElementById('m-sma20').innerText = currentAssetData.technical.SMA20 ? formatPrice(currentAssetData.technical.SMA20, currentTicker) : 'N/A';
+                document.getElementById('m-sma50').innerText = currentAssetData.technical.SMA50 ? formatPrice(currentAssetData.technical.SMA50, currentTicker) : 'N/A';
                 document.getElementById('m-1w').innerText = `${currentAssetData.performance['1w'].toFixed(2)}%`;
                 document.getElementById('m-1y').innerText = `${currentAssetData.performance['1y'].toFixed(2)}%`;
                 document.getElementById('m-1w').className = `metric-value ${currentAssetData.performance['1w'] >= 0 ? 'positive' : 'negative'}`;
@@ -490,6 +505,12 @@
             currentTimeframe = document.getElementById('timeframe-selector').value;
             loadAssetList();
             renderChart(currentTicker);
+        }
+
+        function changeWeight() {
+            currentWeightMode = document.getElementById('weight-selector').value;
+            loadAssetList();
+            refreshMetricsUI();
         }
 
         function changeCurrency() {
