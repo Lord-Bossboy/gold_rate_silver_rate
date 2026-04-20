@@ -58,7 +58,19 @@
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: space-between;
+        }
+        
+        .currency-select {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border);
+            color: var(--accent-silver);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Orbitron';
+            font-size: 0.75rem;
+            outline: none;
+            cursor: pointer;
         }
 
         #search-container { padding: 15px; }
@@ -74,7 +86,13 @@
         }
         #asset-search:focus { border-color: var(--accent-silver); }
 
-        .asset-list { flex-grow: 1; overflow-y: auto; padding: 10px; }
+        .asset-list { flex-grow: 1; overflow-y: auto; padding: 10px; overflow-x: hidden; }
+        
+        @keyframes slideIn {
+            0% { opacity: 0; transform: translateX(-20px); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+
         .asset-item {
             padding: 12px 15px;
             margin-bottom: 4px;
@@ -86,6 +104,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            opacity: 0;
+            /* Animation triggered in JS */
         }
         .asset-item:hover { background: var(--hover-bg); border-color: var(--border-hover); }
         .asset-item.active { 
@@ -105,7 +125,7 @@
             flex-direction: column;
             padding: 0;
             position: relative;
-            background: #000; /* For TradingView widget wrapper */
+            background: #000;
         }
 
         #chart-frame {
@@ -180,14 +200,6 @@
         .metrics-wrapper {
             margin-bottom: 20px;
         }
-        .metrics-header {
-            font-family: 'Orbitron';
-            font-size: 0.75rem;
-            color: var(--accent-silver);
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-        }
         .metrics-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -241,22 +253,26 @@
 
     <div id="left-sidebar">
         <div class="brand">
-            <span style="display:inline-block; width:8px; height:8px; background:var(--accent-silver); border-radius:50%;"></span>
-            HORIZON
+            <div>
+                <span style="display:inline-block; width:8px; height:8px; background:var(--accent-silver); border-radius:50%; margin-right:5px;"></span>
+                HORIZON
+            </div>
+            <select id="currency-selector" class="currency-select" onchange="changeCurrency()">
+                <option value="USD">USD ($)</option>
+                <option value="INR">INR (₹)</option>
+                <option value="EUR">EUR (€)</option>
+            </select>
         </div>
         <div id="search-container">
             <input type="text" id="asset-search" placeholder="Search Markets...">
         </div>
         <div class="asset-list" id="asset-list">
-            <div style="padding: 15px; font-size: 0.85rem; color: var(--text-dim);">
-                <p>Establishing connection...</p>
-                <p style="font-size: 0.7rem; margin-top: 5px;">If this persists on a local file, please <a href="https://lord-bossboy.github.io/gold_rate_silver_rate/" style="color:var(--accent-silver)" target="_blank">view the online deploy</a>.</p>
-            </div>
+            <!-- Staggered Items -->
         </div>
     </div>
 
     <div id="main-viewport">
-        <!-- TradingView Advanced Chart will be injected here -->
+        <!-- TradingView Advanced Chart -->
         <div id="chart-frame"></div>
     </div>
 
@@ -267,7 +283,7 @@
         </div>
 
         <div id="active-info-panel">
-            <div id="active-name">Select Asset</div>
+            <div id="active-name">Loading...</div>
             <div id="active-symbol-tag">-</div>
         </div>
 
@@ -302,9 +318,44 @@
     </div>
 
     <script>
-        let currentAssetData;
+        // Data & State Configuration
+        let currentAssetData = null;
+        let currentTicker = "GC=F"; // Default to gold instantly
+        
+        let fxRates = { USD: 1, INR: 83.0, EUR: 0.92 }; // Defaults, updated via API
+        let currentCurrency = 'USD';
+        
+        const CACHE_BUST = new Date().getTime(); // Prevent gh-pages caching issues
 
-        // Map Yahoo Finance Tickers to TradingView Symbols for Real-Time Charts
+        const FALLBACK_TICKERS = [
+            {ticker: "GC=F", name: "Gold", price: 0, change1d: 0}, {ticker: "SI=F", name: "Silver", price: 0, change1d: 0},
+            {ticker: "PL=F", name: "Platinum", price: 0, change1d: 0}, {ticker: "PA=F", name: "Palladium", price: 0, change1d: 0},
+            {ticker: "HG=F", name: "Copper", price: 0, change1d: 0}, {ticker: "GLD", name: "SPDR Gold Trust", price: 0, change1d: 0},
+            {ticker: "SLV", name: "iShares Silver Trust", price: 0, change1d: 0}, {ticker: "PPLT", name: "Physical Platinum", price: 0, change1d: 0},
+            {ticker: "PALL", name: "Physical Palladium", price: 0, change1d: 0}, {ticker: "CPER", name: "Copper Index", price: 0, change1d: 0},
+            {ticker: "LIT", name: "Global X Lithium ETF", price: 0, change1d: 0}, {ticker: "REMX", name: "Rare Earth/Strategic Metals", price: 0, change1d: 0},
+            {ticker: "BATT", name: "Lithium & Battery Tech", price: 0, change1d: 0}, {ticker: "URA", name: "Global X Uranium ETF", price: 0, change1d: 0},
+            {ticker: "COPX", name: "Global X Copper Miners", price: 0, change1d: 0}, {ticker: "SIL", name: "Silver Miners ETF", price: 0, change1d: 0},
+            {ticker: "SILJ", name: "Junior Silver Miners", price: 0, change1d: 0}, {ticker: "GDX", name: "Gold Miners ETF", price: 0, change1d: 0},
+            {ticker: "GDXJ", name: "Junior Gold Miners", price: 0, change1d: 0}, {ticker: "PICK", name: "Global Metals Producers", price: 0, change1d: 0},
+            {ticker: "XME", name: "SPDR Metals & Mining", price: 0, change1d: 0}, {ticker: "DBB", name: "Invesco Base Metals", price: 0, change1d: 0},
+            {ticker: "FCX", name: "Freeport-McMoRan", price: 0, change1d: 0}, {ticker: "BHP", name: "BHP Group", price: 0, change1d: 0},
+            {ticker: "RIO", name: "Rio Tinto", price: 0, change1d: 0}, {ticker: "VALE", name: "Vale S.A.", price: 0, change1d: 0},
+            {ticker: "AA", name: "Alcoa Corporation", price: 0, change1d: 0}, {ticker: "NEM", name: "Newmont Corporation", price: 0, change1d: 0},
+            {ticker: "GOLD", name: "Barrick Gold Corp", price: 0, change1d: 0}, {ticker: "SCCO", name: "Southern Copper", price: 0, change1d: 0},
+            {ticker: "AEM", name: "Agnico Eagle Mines", price: 0, change1d: 0}, {ticker: "WPM", name: "Wheaton Precious Metals", price: 0, change1d: 0},
+            {ticker: "FNV", name: "Franco-Nevada", price: 0, change1d: 0}, {ticker: "KGC", name: "Kinross Gold", price: 0, change1d: 0},
+            {ticker: "AU", name: "AngloGold Ashanti", price: 0, change1d: 0}, {ticker: "GFI", name: "Gold Fields", price: 0, change1d: 0},
+            {ticker: "PAAS", name: "Pan American Silver", price: 0, change1d: 0}, {ticker: "SSRM", name: "SSR Mining", price: 0, change1d: 0},
+            {ticker: "CDE", name: "Coeur Mining", price: 0, change1d: 0}, {ticker: "AGI", name: "Alamos Gold", price: 0, change1d: 0},
+            {ticker: "RGLD", name: "Royal Gold", price: 0, change1d: 0}, {ticker: "SAND", name: "Sandstorm Gold", price: 0, change1d: 0},
+            {ticker: "OR", name: "Osisko Gold Royalties", price: 0, change1d: 0}, {ticker: "MP", name: "MP Materials", price: 0, change1d: 0},
+            {ticker: "CLF", name: "Cleveland-Cliffs", price: 0, change1d: 0}, {ticker: "X", name: "United States Steel", price: 0, change1d: 0},
+            {ticker: "TECK", name: "Teck Resources", price: 0, change1d: 0}, {ticker: "HMY", name: "Harmony Gold", price: 0, change1d: 0},
+            {ticker: "EGO", name: "Eldorado Gold", price: 0, change1d: 0}, {ticker: "IAG", name: "IAMGOLD Corporation", price: 0, change1d: 0}
+        ];
+
+        // Map Yahoo Finance to TradingView
         const tvSymbolMap = {
             "GC=F": "COMEX:GC1!", "SI=F": "COMEX:SI1!", "PL=F": "NYMEX:PL1!", "PA=F": "NYMEX:PA1!", "HG=F": "COMEX:HG1!",
             "GLD": "AMEX:GLD", "SLV": "AMEX:SLV", "PPLT": "AMEX:PPLT", "PALL": "AMEX:PALL", "CPER": "AMEX:CPER",
@@ -318,62 +369,113 @@
             "MP": "NYSE:MP", "CLF": "NYSE:CLF", "X": "NYSE:X", "TECK": "NYSE:TECK", "HMY": "NYSE:HMY", 
             "EGO": "NYSE:EGO", "IAG": "NYSE:IAG"
         };
+        
+        const currencySymbols = { USD: '$', INR: '₹', EUR: '€' };
 
-        function getTvSymbol(ticker) {
-            if (tvSymbolMap[ticker]) return tvSymbolMap[ticker];
-            return ticker.replace('=F', '1!');
+        function getTvSymbol(t) { return tvSymbolMap[t] || t.replace('=F', '1!'); }
+        function formatPrice(val) {
+            if (!val || isNaN(val)) return 'N/A';
+            const converted = val * fxRates[currentCurrency];
+            return `${currencySymbols[currentCurrency]}${converted.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         }
 
-        async function loadAssetList() {
+        async function fetchExchangeRates() {
             try {
-                const res = await fetch('data/assets.json');
-                const assets = await res.json();
-                const list = document.getElementById('asset-list');
-                list.innerHTML = assets.map(a => `
-                    <div class="asset-item" onclick="loadAsset('${a.ticker}', this)">
-                        <div><span class="symbol">${a.ticker}</span></div>
-                        <div style="text-align:right">
-                            <div class="price-val">$${a.price.toFixed(2)}</div>
-                            <div class="change-pct ${a.change1d >= 0 ? 'positive' : 'negative'}">${a.change1d.toFixed(2)}%</div>
-                        </div>
-                    </div>
-                `).join('');
-                if (assets.length > 0) loadAsset(assets[0].ticker, list.firstElementChild);
-            } catch (e) {
-                console.error("Failed to fetch assets.json", e);
+                const res = await fetch("https://api.exchangerate-api.com/v4/latest/USD");
+                const data = await res.json();
+                if(data && data.rates) {
+                    fxRates.INR = data.rates.INR;
+                    fxRates.EUR = data.rates.EUR;
+                }
+            } catch(e) {
+                console.warn("Forex fetch failed, using fallback static rates.");
             }
         }
 
-        async function loadAsset(ticker, el) {
+        async function loadAssetList() {
+            let assets = [...FALLBACK_TICKERS];
+            try {
+                // Attempt to fetch dynamic data generated by GitHub Action
+                const res = await fetch(`data/assets.json?v=${CACHE_BUST}`);
+                const dynamicAssets = await res.json();
+                if (dynamicAssets && dynamicAssets.length > 0) assets = dynamicAssets;
+            } catch (e) {
+                console.warn("Local env or missing backend data: Running in offline fallback mode.");
+            }
+
+            const list = document.getElementById('asset-list');
+            list.innerHTML = assets.map((a, index) => {
+                const priceHtml = a.price ? `<div class="price-val">${formatPrice(a.price)}</div>` : `<div style="font-size:0.75rem; color:var(--text-dim)">LIVE DATA</div>`;
+                const changeHtml = a.price ? `<div class="change-pct ${a.change1d >= 0 ? 'positive' : 'negative'}">${a.change1d.toFixed(2)}%</div>` : ``;
+                
+                return `
+                    <div class="asset-item ${a.ticker === currentTicker ? 'active' : ''}" 
+                         id="item-${a.ticker}"
+                         style="animation: slideIn 0.4s ease forwards; animation-delay: ${index * 0.04}s"
+                         onclick="loadAsset('${a.ticker}')">
+                        <div><span class="symbol">${a.ticker}</span></div>
+                        <div style="text-align:right">
+                            ${priceHtml}
+                            ${changeHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function loadAsset(ticker) {
+            currentTicker = ticker;
             document.querySelectorAll('.asset-item').forEach(i => i.classList.remove('active'));
+            const el = document.getElementById(`item-${ticker}`);
             if (el) el.classList.add('active');
             
             try {
-                // Fetch AI background data calculated by the backend
-                const res = await fetch(`data/${ticker}.json`);
+                // Fetch AI backend data context
+                const res = await fetch(`data/${ticker}.json?v=${CACHE_BUST}`);
                 currentAssetData = await res.json();
                 
                 document.getElementById('active-name').innerText = currentAssetData.name;
                 document.getElementById('active-symbol-tag').innerText = currentAssetData.ticker;
-
-                // Metrics
-                document.getElementById('m-sma20').innerText = currentAssetData.technical.SMA20 ? `$${currentAssetData.technical.SMA20.toFixed(2)}` : 'N/A';
-                document.getElementById('m-sma50').innerText = currentAssetData.technical.SMA50 ? `$${currentAssetData.technical.SMA50.toFixed(2)}` : 'N/A';
-                document.getElementById('m-1w').innerText = `${currentAssetData.performance['1w'].toFixed(2)}%`;
-                document.getElementById('m-1y').innerText = `${currentAssetData.performance['1y'].toFixed(2)}%`;
-
-                document.getElementById('m-1w').className = `metric-value ${currentAssetData.performance['1w'] >= 0 ? 'positive' : 'negative'}`;
-                document.getElementById('m-1y').className = `metric-value ${currentAssetData.performance['1y'] >= 0 ? 'positive' : 'negative'}`;
-
             } catch (e) {
-                console.warn(`Could not load context data for ${ticker}. Realtime chart will still load.`);
-                // Fallback for UI if backend data fails
-                currentAssetData = { name: ticker, ticker: ticker };
-                document.getElementById('active-name').innerText = ticker;
-                document.getElementById('active-symbol-tag').innerText = "Live Market Data";
+                currentAssetData = { name: FALLBACK_TICKERS.find(t => t.ticker === ticker)?.name || ticker, ticker: ticker };
+                document.getElementById('active-name').innerText = currentAssetData.name;
+                document.getElementById('active-symbol-tag').innerText = "Real-Time Tracking Active";
             }
 
-            // Render Real-Time TradingView Chart
+            refreshMetricsUI();
+            renderChart(ticker);
+            document.getElementById('ai-chat').innerHTML = "Ready for insight processing.";
+        }
+
+        function refreshMetricsUI() {
+            if(currentAssetData && currentAssetData.technical) {
+                document.getElementById('m-sma20').innerText = currentAssetData.technical.SMA20 ? formatPrice(currentAssetData.technical.SMA20) : 'N/A';
+                document.getElementById('m-sma50').innerText = currentAssetData.technical.SMA50 ? formatPrice(currentAssetData.technical.SMA50) : 'N/A';
+                document.getElementById('m-1w').innerText = `${currentAssetData.performance['1w'].toFixed(2)}%`;
+                document.getElementById('m-1y').innerText = `${currentAssetData.performance['1y'].toFixed(2)}%`;
+                document.getElementById('m-1w').className = `metric-value ${currentAssetData.performance['1w'] >= 0 ? 'positive' : 'negative'}`;
+                document.getElementById('m-1y').className = `metric-value ${currentAssetData.performance['1y'] >= 0 ? 'positive' : 'negative'}`;
+            } else {
+                document.getElementById('m-sma20').innerText = 'N/A';
+                document.getElementById('m-sma50').innerText = 'N/A';
+                document.getElementById('m-1w').innerText = 'N/A';
+                document.getElementById('m-1y').innerText = 'N/A';
+                document.getElementById('m-1w').className = `metric-value`;
+                document.getElementById('m-1y').className = `metric-value`;
+            }
+        }
+
+        function changeCurrency() {
+            currentCurrency = document.getElementById('currency-selector').value;
+            // Re-render sidebar prices
+            loadAssetList();
+            // Re-render metrics UI
+            refreshMetricsUI();
+            // Re-render tradingview chart with new currency
+            renderChart(currentTicker);
+        }
+
+        function renderChart(ticker) {
             new TradingView.widget({
                 "autosize": true,
                 "symbol": getTvSymbol(ticker),
@@ -382,20 +484,28 @@
                 "theme": "dark",
                 "style": "1",
                 "locale": "en",
+                // Attempt to force currency on supported assets
+                "currency": currentCurrency, 
                 "enable_publishing": false,
-                "backgroundColor": "#050607", // Deep blend with BG
+                "backgroundColor": "#000000",
                 "gridColor": "rgba(255, 255, 255, 0.03)",
                 "hide_top_toolbar": false,
                 "hide_legend": false,
                 "save_image": false,
                 "container_id": "chart-frame"
             });
-            
-            document.getElementById('ai-chat').innerHTML = "Ready for insight processing.";
         }
 
+        // Search Filter
+        document.getElementById('asset-search').addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            document.querySelectorAll('.asset-item').forEach(i => {
+                i.style.display = i.innerText.toLowerCase().includes(val) ? 'flex' : 'none';
+            });
+        });
+
+        // AI Modal Integration
         function showModal() { document.getElementById('api-modal').style.display = 'flex'; }
-        
         function saveKey() {
             localStorage.setItem('openai_key', document.getElementById('api-key-input').value);
             document.getElementById('api-modal').style.display = 'none';
@@ -416,7 +526,7 @@
                         model: "gpt-4o-mini",
                         messages: [{
                             role: "system",
-                            content: "You are HORIZON, a concise structural market intelligence assistant. Analyze the provided asset metrics and predict sentiment. Do not use markdown, keep it brief and professional."
+                            content: `You are HORIZON, a concise structural market intelligence assistant. All analysis should be in the context of the user's selected currency (${currentCurrency}). Predict sentiment. Do not use markdown, keep it brief.`
                         }, {
                             role: "user",
                             content: `Analyze: ${JSON.stringify(currentAssetData || {})}`
@@ -429,7 +539,6 @@
                 const result = await response.json();
                 const text = result.choices[0].message.content;
                 
-                // Telemetry typing effect
                 chatBox.innerHTML = "";
                 let i = 0;
                 let timer = setInterval(() => {
@@ -444,19 +553,21 @@
             }
         }
 
-        document.getElementById('asset-search').addEventListener('input', (e) => {
-            const val = e.target.value.toLowerCase();
-            document.querySelectorAll('.asset-item').forEach(i => {
-                i.style.display = i.innerText.toLowerCase().includes(val) ? 'flex' : 'none';
-            });
-        });
-
-        // Add note about API key to input if exists
-        window.addEventListener('DOMContentLoaded', () => {
+        // Sequence Initialization
+        window.addEventListener('DOMContentLoaded', async () => {
              if (localStorage.getItem('openai_key')) {
                  document.getElementById('api-key-input').value = localStorage.getItem('openai_key');
              }
+             
+             // 1. Fetch live currency rates (async)
+             await fetchExchangeRates();
+             
+             // 2. Immediately load Gold chart & sidebar list
+             renderChart(currentTicker);
              loadAssetList();
+             
+             // 3. Kick off fetching data context for gold in the background
+             loadAsset(currentTicker);
         });
     </script>
 </body>
